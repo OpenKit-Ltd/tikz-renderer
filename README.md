@@ -1,88 +1,117 @@
-# TikZ to PNG Server
+# TikZ Renderer
 
-A simple Flask-based Python server that converts TikZ code into PNG images. This service is particularly useful for projects that need to render high-quality diagrams using TikZ (typically a LaTeX package) and cannot easily do so in the browser with JavaScript.
+A lightweight Flask server that compiles TikZ (LaTeX) code into PNG or PDF images. Designed to run server-side for projects that require rendering high-quality diagrams from TikZ—something not easily achieved in the browser using JavaScript.
+
+---
 
 ## ✨ Features
 
-* **TikZ Rendering**: Accepts raw TikZ code via API and returns a rendered PNG.
-* **Whitespace Trimming**: Automatically crops excessive whitespace from the final image for a cleaner presentation.
-* **Lightweight API**: Minimalistic Flask app for easy integration and quick deployment.
+- **TikZ Compilation**: Accepts TikZ code and compiles it using `tectonic`.
+- **PNG or PDF Output**: Returns a clean, cropped PNG image or the original PDF.
+- **Smart Whitespace Trimming**: Automatically trims excessive white space based on pixel analysis.
+- **Simple API**: POST an endpoint with TikZ, get an image back—ready to integrate.
+
+---
+
+## 📁 Project Structure
+
+```
+
+.
+├── app.py              # Flask API server
+├── utils.py            # Compilation, cropping, and image conversion logic
+├── requirements.txt    # Python dependencies
+├── .gitignore
+├── LICENSE             # License information
+├── README.md           # Project documentation
+````
+
+---
 
 ## 📦 Requirements
 
-* Python 3.7+
-* LaTeX with TikZ (e.g., `texlive-full`)
-* Required Python packages (install via `pip`):
+- Python 3.7+
+- [Tectonic](https://tectonic-typesetting.github.io/) (LaTeX compiler)
+- [Poppler](https://poppler.freedesktop.org/) (for `pdftoppm`, used by `pdf2image`)
+- Python packages:
 
 ```bash
 pip install -r requirements.txt
-```
+````
 
-You may also need:
+To install system dependencies (on Ubuntu):
 
 ```bash
-sudo apt-get install poppler-utils # for pdf cropping
+sudo apt install poppler-utils
 ```
+
+To install Tectonic:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://drop.crates.io | bash
+```
+
+Or see [https://tectonic-typesetting.github.io/en-US/install/](https://tectonic-typesetting.github.io/en-US/install/)
+
+---
 
 ## 🚀 Usage
 
-### 1. Start the server
+### 1. Run the Server
 
 ```bash
-python server.py
+python app.py
 ```
 
-### 2. Send a request
+### 2. Send a POST request
 
-Use a POST request to `/render` with your TikZ code in the JSON body:
+#### Endpoint
+
+```
+POST /compile
+```
+
+#### Body (JSON)
 
 ```json
 {
-  "tikz_code": "\\begin{tikzpicture}...\\end{tikzpicture}"
+  "tikz_code": "\\begin{tikzpicture}\\draw (0,0) -- (1,1);\\end{tikzpicture}",
+  "format": "png"
 }
 ```
 
-#### Example using `curl`:
+* `tikz_code` (required): Raw TikZ code.
+* `format` (optional): `"png"` or `"pdf"` (default is `"png"`).
+
+#### Example using `curl`
 
 ```bash
-curl -X POST http://localhost:5000/render \
+curl -X POST http://localhost:5000/compile \
      -H "Content-Type: application/json" \
      -d '{"tikz_code": "\\begin{tikzpicture}\\draw (0,0) -- (1,1);\\end{tikzpicture}"}' \
      --output output.png
 ```
 
-### 3. Receive the image
-
-The server returns a cropped PNG image in response.
+---
 
 ## 🧠 How It Works
 
 1. TikZ code is embedded into a minimal LaTeX document.
-2. The document is compiled to PDF using `pdflatex`.
-3. The PDF is converted to a PNG using `pdftoppm`.
-4. A helper function analyses the PNG and trims excess whitespace.
-5. The final cropped PNG is returned to the client.
+2. Tectonic compiles the document into a PDF.
+3. If `png` is requested:
 
-## 🧹 Cropping Logic
+   * The PDF is converted to an image.
+   * Smart cropping removes extra white space using pixel intensity checks.
+4. The image is returned to the client.
 
-The image cropping is done using pixel intensity analysis to detect the bounding box of the actual content. This ensures the output image contains only what's necessary, with minimal margins.
-
-## 📁 Project Structure
-
-```
-.
-├── server.py            # Main Flask app
-├── render.py            # Core TikZ rendering logic
-├── crop.py              # Image cropping utilities
-├── templates/
-│   └── tikz_template.tex# LaTeX template for TikZ rendering
-├── requirements.txt     # Python dependencies
-```
+---
 
 ## ⚠️ Notes
 
-* Make sure LaTeX (with TikZ) is installed and accessible via the command line.
-* This server is designed for local or trusted environments — **do not expose it publicly without proper sanitisation**, as LaTeX execution can be exploited.
+* TikZ code is executed server-side—**never expose this service publicly without sanitisation**, as LaTeX execution can be dangerous.
+* Temporary files are created in a secure temp directory and auto-cleaned.
+
+---
 
 ## 📜 License
 
