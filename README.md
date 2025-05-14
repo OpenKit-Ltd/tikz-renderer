@@ -1,6 +1,6 @@
 # TikZ Renderer
 
-A lightweight Flask server that compiles TikZ (LaTeX) code into PNG or PDF images. Designed to run server-side for projects that require rendering high-quality diagrams from TikZ—something not easily achieved in the browser using JavaScript.
+A lightweight Flask server that compiles TikZ (LaTeX) code into PNG or PDF images. Designed to run server-side for projects that require rendering high-quality diagrams from TikZ - something not easily achieved in the browser using JavaScript.
 
 ---
 
@@ -10,6 +10,19 @@ A lightweight Flask server that compiles TikZ (LaTeX) code into PNG or PDF image
 - **PNG or PDF Output**: Returns a clean, cropped PNG image or the original PDF.
 - **Smart Whitespace Trimming**: Automatically trims excessive white space based on pixel analysis.
 - **Simple API**: POST an endpoint with TikZ, get an image back—ready to integrate.
+
+---
+
+## 🖼 Examples
+
+Here are a few advanced TikZ diagrams rendered using this server.
+See [`examples/`](examples/) for source `.tex` code and output images.
+
+| Diagram             | Author             | Preview |
+|---------------------|--------------------|---------|
+| Torus  | Janosh Riebesell            | <img src="examples/torus/rendered_output.png" width="350"/> |
+| Masked Autoencoder  | Mathieu Germain, Karol Gregor, et al.   | <img src="examples/masked_autoencoder/rendered_output.png" width="350"/> |
+| Orbit Diagram       | Izaak Neutelings   | <img src="examples/orbit_diagram/rendered_output.png" width="350"/> |
 
 ---
 
@@ -89,6 +102,29 @@ curl -X POST http://localhost:5000/compile \
      -d '{"tikz_code": "\\begin{tikzpicture}\\draw (0,0) -- (1,1);\\end{tikzpicture}"}' \
      --output output.png
 ```
+
+### 📝 TikZ Code Formatting Notes
+
+When sending TikZ code in the JSON body, it must be properly escaped:
+
+- Replace each newline with \n
+- Escape every backslash (\) as \\
+
+✅ Example
+This TikZ code:
+```latex
+\begin{tikzpicture}
+  \draw (0,0) -- (1,1);
+\end{tikzpicture}
+```
+Must be formatted like this in JSON:
+```json
+{
+  "tikz_code": "\\begin{tikzpicture}\\n  \\draw (0,0) -- (1,1);\\n\\end{tikzpicture}"
+}
+```
+
+> ⚠️ Most programming languages (like Python, JS, etc.) have utilities for properly escaping multi-line strings for JSON. Avoid doing this by hand unless it's simple.
 
 ---
 

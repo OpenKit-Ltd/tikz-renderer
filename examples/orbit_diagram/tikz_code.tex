@@ -1,0 +1,120 @@
+% Author: Izaak Neutelings (January 2024)
+\documentclass[border=3pt,tikz]{standalone}
+\usetikzlibrary{arrows.meta,bending} % for arrow head size
+\usetikzlibrary{calc} % for calculating coordinates
+\usetikzlibrary{decorations.pathmorphing} % for random steps
+\usetikzlibrary{fpu} % for higher precision in "random steps"
+
+% FADINGS
+\usetikzlibrary{fadings}
+\begin{tikzfadingfrompicture}[name=halo]
+  \shade[inner color=transparent!0,outer color=transparent!100] (0,0) circle (0.9);
+\end{tikzfadingfrompicture}
+%\begin{tikzfadingfrompicture}[name=bright spot]
+%  \shade[inner color=transparent!50,outer color=transparent!100] (0,0) circle (0.6);
+%\end{tikzfadingfrompicture}
+
+% COLORS
+\usepackage{xcolor}
+\colorlet{water}{blue!70!cyan!80}
+\colorlet{grass}{green!70!teal!90!black}
+\colorlet{sand}{yellow!70!brown!90!black}
+\colorlet{shadow}{water!60!black}
+
+% STYLES & MACROS
+\def\angE{23} % Earth axis tilt
+\def\RE{0.4} % Earth radius
+\def\ROx{3.0} % orbit horizontal radius
+\def\ROy{0.9} % orbit vertical radius
+\def\drawmap{ % map of earth 
+  \fill[land=grass,rotate=-2] % land mass
+    (-30:0.36*\RE) ellipse({0.22*\RE} and {0.50*\RE}) % Africa south
+    (45:0.17*\RE) ellipse({0.39*\RE} and {0.21*\RE}) % North Africa
+    {[rotate=22] (31:0.83*\RE) ellipse({0.45*\RE} and {0.28*\RE})} % Asia
+    {[rotate=38] (54:0.55*\RE) ellipse({0.33*\RE} and {0.09*\RE})} % West Europa
+    {[rotate=22] (65:0.79*\RE) ellipse({0.19*\RE} and {0.04*\RE})} % North Europa
+    {[rotate=-10] (216:1.10*\RE) ellipse({0.22*\RE} and {0.40*\RE})} % South America
+  ;
+  \fill[land=sand] % sahara
+    (46:0.18*\RE) ellipse({0.35*\RE} and {0.16*\RE});
+  \fill[land=sand,rotate=22] % Middle East
+    (24:0.69*\RE) ellipse({0.26*\RE} and {0.07*\RE});
+  \fill[land=white,rotate=-65] (186:0.95*\RE) ellipse({0.08*\RE} and {0.20*\RE}); % Greenland
+  \fill[land=white] (88:\RE) ellipse({0.4*\RE} and {0.13*\RE}); % ice sheet north
+  \fill[land=white] (-96:\RE) ellipse({0.4*\RE} and {0.1*\RE}); % ice sheet south
+}
+\tikzset{
+  >=latex, % for LaTeX arrow head
+  /pgf/fpu/install only={reciprocal}, % for higher precision in "random steps"
+  orbit/.style={-{latex[scale=0.8,bend]},black!75}, %dashed
+  altitude/.style={ultra thin,dash pattern=on 2pt off 1pt,opacity=0.8}, %dashed
+  note/.style={red!90!black,align=center,scale=0.5},
+  wrinkle/.style={rounded corners=0.2pt,decorate,decoration={random steps,segment length=1pt,amplitude=0.2pt}},
+  land/.style={ultra thin,draw=#1!40!black,rotate=-\angE,postaction={fill=#1},wrinkle},
+  mysmallarrow/.style={-{Latex[length=3,width=2,bend]},red,line width=0.4,line cap=round},
+  pics/earth/.style={ % Earth in orbit (argument #1 = polar angle)
+    code={
+      \message{^^JEarth polar angle=#1}
+      \coordinate (-O) at (#1:{\ROx} and {\ROy});
+        \begin{scope}[shift={(-O)}]
+        \draw[black!80,line cap=round] % tilted axis
+          (0,0)++(90-\angE:1.24*\RE) coordinate(-N) % north
+          --++ (-90-\angE:2.40*\RE) coordinate (-S); % south
+        \fill[water] (0,0) circle(\RE); % Earth fill (even)
+        \begin{scope} % clip
+          \clip (0,0) circle(\RE);
+          \drawmap
+          \fill[path fading=halo,white,opacity=0.42] % create bright spot shifted towards sun
+            (#1-180:{0.7*\RE} and {0.2*\RE}) circle(1.2*\RE);
+        \end{scope}
+        \fill[shadow,rotate=0,opacity=0.9] % Earth shadow
+          \ifnum #1=0 (90:\RE) arc(90:-90:\RE) \fi % right shadow
+          \ifnum #1=180 (90:\RE) arc(90:270:\RE) \fi % left shadow
+          \ifnum #1=270 (0,0) circle(\RE) \fi; % full shadow
+        \draw[rotate=-\angE,altitude,solid] % equator
+          (-\RE,0) to[out=-12,in=-168] (\RE,0);
+        \foreach \i [evaluate={\y=0.35*\i*\RE;\x=sqrt(\RE*\RE-\y*\y);}] in {1,2}{
+          \draw[rotate=-\angE,altitude] % altitude lines
+            (-\x,\y) to[out=-12,in=-168] (\x,\y)
+            (-\x,-\y) to[out=-12,in=-168] (\x,-\y);
+        }
+        \draw[black,very thin] (0,0) circle(\RE); % Earth outline
+        \draw[mysmallarrow] % indicate rotation
+          (90-\angE:1.24*\RE)++(180:{0.14} and {0.1}) arc(180:330:{0.15} and {0.1});
+      \end{scope}
+    }
+  }
+}
+
+\begin{document}
+
+% EARTH in orbit
+\begin{tikzpicture}
+  \coordinate (O) at (0,0);
+  \coordinate (S) at (0.02*\ROx,0); % sun (slightly shifted to focus, eccentricity ~ 0.02)
+  
+  % SUN
+  \pic (E90) at (O) {earth=90}; % draw Earth behind sun (March)
+  \fill[path fading=halo,orange!80!yellow!80] % solar halo/corona
+    (S) circle (2.2*\RE);
+  \draw[very thin,orange!80!yellow!80,fill=orange!50!yellow!40] % Sun
+    (S) circle (1.5*\RE);
+  
+  % EARTHS
+  \foreach \ang in {0,180,270}{
+    \pic (E\ang) at (O) {earth=\ang}; % draw in front of sun
+  }
+  \node[note,above=3pt] at (E180-N) {June 21\\A};
+  \node[note,below=2pt] at (E270-S) {B\\September 22};
+  \node[note,above=3pt] at (E0-N) {December 21\\C};
+  \node[note,above=3pt] at (E90-N) {March 21\\D};
+  
+  % LABELS
+  \foreach \i [evaluate={\anga=(\i-1)*90+(mod(\i,2)==0?15:35)}] in {1,...,4}{
+    \draw[orbit] % orbit
+      (\anga:{\ROx} and {\ROy}) arc(\anga:\anga+40:{\ROx} and {\ROy});
+  }
+
+\end{tikzpicture}
+
+\end{document}
