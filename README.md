@@ -16,8 +16,6 @@ A lightweight Flask server that compiles TikZ (LaTeX) code into PNG or PDF image
 ## 📁 Project Structure
 
 ```
-
-.
 ├── app.py              # Flask API server
 ├── utils.py            # Compilation, cropping, and image conversion logic
 ├── requirements.txt    # Python dependencies
