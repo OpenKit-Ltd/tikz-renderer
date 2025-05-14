@@ -115,6 +115,10 @@ curl -X POST http://localhost:5000/compile \
 
 MIT License
 
+## 🙏 Acknowledgments
+
+Special thanks to the amazing TikZ community and contributors to resources like [TikZ.net](https://tikz.net) and [TeXample.net](http://www.texample.net/). These platforms have been invaluable for inspiration, examples, and guidance, and continue to showcase the power of LaTeX graphics through TikZ.
+
 ---
 
 Made with ❤️ by Reuben McQueen at [OpenKit](https://openkit.co.uk)
