@@ -1,3 +1,4 @@
 combine.py
 tmp/
 .env
+__pycache__/
