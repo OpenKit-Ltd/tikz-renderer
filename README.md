@@ -108,7 +108,7 @@ curl -X POST http://localhost:5000/compile \
 When sending TikZ code in the JSON body, it must be properly escaped:
 
 - Replace each newline with \n
-- Escape every backslash (\) as \\
+- Escape every backslash (\\) as \\\
 
 ✅ Example
 This TikZ code:
@@ -124,7 +124,7 @@ Must be formatted like this in JSON:
 }
 ```
 
-> ⚠️ Most programming languages (like Python, JS, etc.) have utilities for properly escaping multi-line strings for JSON. Avoid doing this by hand unless it's simple.
+> ⚠️ Most programming languages (like Python, JS, etc.) have utilities for properly escaping multi-line strings for JSON. Avoid doing this by hand unless it's simple. This should be handled autonamtically in most cases but is important to consider if you're using something like Postman or Insomnoa to test the endpoint.
 
 ---
 
