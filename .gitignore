@@ -2,3 +2,4 @@ combine.py
 tmp/
 .env
 __pycache__
+debug_image.png

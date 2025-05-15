@@ -22,11 +22,33 @@ def is_row_white(image, y):
     return True
 
 
+def is_column_white(image, x):
+    """Check if an entire column of pixels is white."""
+    height = image.height
+    for y in range(height):
+        pixel = image.getpixel((x, y))
+        if not is_pixel_white(pixel):
+            return False
+    return True
+
+
 def detect_bottom_crop_pixels(image):
     height = image.height
     crop_pixels = 0
     for y in range(height - 1, -1, -1):
         if is_row_white(image, y):
+            crop_pixels += 1
+        else:
+            break
+    return crop_pixels
+
+
+def detect_right_crop_pixels(image):
+    """Detect the number of white pixels from the right side of the image."""
+    width = image.width
+    crop_pixels = 0
+    for x in range(width - 1, -1, -1):
+        if is_column_white(image, x):
             crop_pixels += 1
         else:
             break
@@ -47,8 +69,8 @@ def convert_pdf_page_to_image(pdf_path):
         return None, str(e)
 
 
-# Added bottom_padding_pixels parameter with default 10
-def crop_pdf_bottom_smart(input_pdf_path, output_pdf_path, bottom_padding_pixels=100):
+def crop_pdf_smart(input_pdf_path, output_pdf_path, bottom_padding_pixels=100, right_padding_pixels=100):
+    """Crop whitespace from both bottom and right sides of the PDF with padding."""
     image, error = convert_pdf_page_to_image(input_pdf_path)
     if error:
         print(
@@ -61,49 +83,80 @@ def crop_pdf_bottom_smart(input_pdf_path, output_pdf_path, bottom_padding_pixels
     image.save(debug_image_path)
     print(f"Debug PNG image saved to: {debug_image_path}")
 
-    crop_pixels = detect_bottom_crop_pixels(image)
-    print(f"Detected crop_pixels (before padding adjustment): {crop_pixels}")
+    # Detect bottom crop pixels
+    bottom_crop_pixels = detect_bottom_crop_pixels(image)
+    print(
+        f"Detected bottom_crop_pixels (before padding adjustment): {bottom_crop_pixels}")
+    bottom_crop_pixels = max(0, bottom_crop_pixels - bottom_padding_pixels)
+    print(
+        f"Detected bottom_crop_pixels (after padding adjustment): {bottom_crop_pixels}")
 
-    # Subtract padding, ensure not negative
-    crop_pixels = max(0, crop_pixels - bottom_padding_pixels)
-    print(f"Detected crop_pixels (after padding adjustment): {crop_pixels}")
+    # Detect right crop pixels
+    right_crop_pixels = detect_right_crop_pixels(image)
+    print(
+        f"Detected right_crop_pixels (before padding adjustment): {right_crop_pixels}")
+    right_crop_pixels = max(0, right_crop_pixels - right_padding_pixels)
+    print(
+        f"Detected right_crop_pixels (after padding adjustment): {right_crop_pixels}")
 
-    if crop_pixels == 0:
-        print("No bottom whitespace detected for smart crop after padding adjustment.")
+    if bottom_crop_pixels == 0 and right_crop_pixels == 0:
+        print("No whitespace detected for smart crop after padding adjustment.")
         return
 
     reader = PdfReader(input_pdf_path)
     writer = PdfWriter()
 
+    points_per_pixel = 72 / 300  # Convert from 300 DPI to points
+
     for page in reader.pages:
         page_height_points = float(page.mediabox.height)
         page_width_points = float(page.mediabox.width)
 
-        points_per_pixel = 72 / 300
-        crop_points = crop_pixels * points_per_pixel
-        print(f"Calculated crop_points: {crop_points:.2f}")
+        # Calculate crop points
+        bottom_crop_points = bottom_crop_pixels * points_per_pixel
+        right_crop_points = right_crop_pixels * points_per_pixel
+        print(f"Calculated bottom_crop_points: {bottom_crop_points:.2f}")
+        print(f"Calculated right_crop_points: {right_crop_points:.2f}")
 
+        # Get current mediabox coordinates
         lower_left_x = float(page.mediabox.lower_left[0])
         lower_left_y = float(page.mediabox.lower_left[1])
         upper_right_x = float(page.mediabox.upper_right[0])
         upper_right_y = float(page.mediabox.upper_right[1])
 
-        new_lower_left_y = lower_left_y + crop_points
+        # Adjust bottom (y coordinate)
+        new_lower_left_y = lower_left_y + bottom_crop_points
         if new_lower_left_y > upper_right_y:
             new_lower_left_y = upper_right_y
 
+        # Adjust right side (x coordinate)
+        new_upper_right_x = upper_right_x - right_crop_points
+        if new_upper_right_x < lower_left_x:
+            new_upper_right_x = lower_left_x
+
+        # Apply new coordinates to mediabox and cropbox
         page.mediabox.lower_left = (lower_left_x, new_lower_left_y)
-        page.mediabox.upper_right = (upper_right_x, upper_right_y)
+        page.mediabox.upper_right = (new_upper_right_x, upper_right_y)
         page.cropbox.lower_left = (lower_left_x, new_lower_left_y)
-        page.cropbox.upper_right = (upper_right_x, upper_right_y)
+        page.cropbox.upper_right = (new_upper_right_x, upper_right_y)
 
         writer.add_page(page)
 
     with open(output_pdf_path, "wb") as output_file:
         writer.write(output_file)
-    # Added padding pixels to print
+
     print(
-        f"Smart cropped PDF saved to: {output_pdf_path}, Cropped pixels: {crop_pixels}, Cropped points: {crop_points:.2f}, Padding pixels: {bottom_padding_pixels}")
+        f"Smart cropped PDF saved to: {output_pdf_path}\n"
+        f"Bottom crop: {bottom_crop_pixels} pixels ({bottom_crop_points:.2f} points), Padding: {bottom_padding_pixels} pixels\n"
+        f"Right crop: {right_crop_pixels} pixels ({right_crop_points:.2f} points), Padding: {right_padding_pixels} pixels"
+    )
+
+
+# Keeping the old function for backward compatibility
+def crop_pdf_bottom_smart(input_pdf_path, output_pdf_path, bottom_padding_pixels=100):
+    """Legacy function that only crops the bottom whitespace."""
+    crop_pdf_smart(input_pdf_path, output_pdf_path,
+                   bottom_padding_pixels=bottom_padding_pixels, right_padding_pixels=0)
 
 
 def compile_tex_to_pdf(tex_code: str, tex_filename: str = "diagram.tex", pdf_filename: str = "diagram.pdf"):
@@ -136,12 +189,11 @@ def compile_tex_to_pdf(tex_code: str, tex_filename: str = "diagram.tex", pdf_fil
         if os.path.exists(generated_pdf) and generated_pdf != pdf_filename:
             os.rename(generated_pdf, pdf_filename)
 
-        # Smart crop using pixel analysis
+        # Smart crop using pixel analysis for both bottom and right
         try:
             print("Smart cropping PDF...")
-            # Pass bottom_padding_pixels=10
-            crop_pdf_bottom_smart(
-                pdf_filename, pdf_filename, bottom_padding_pixels=120)
+            crop_pdf_smart(
+                pdf_filename, pdf_filename, bottom_padding_pixels=120, right_padding_pixels=100)
             print("Smart PDF Cropped successfully!")
         except Exception as e:
             print(f"Smart PDF cropping failed: {e}")
