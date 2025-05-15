@@ -16,7 +16,7 @@ A lightweight Flask server that compiles TikZ (LaTeX) code into PNG or PDF image
 ## 🖼 Examples
 
 Here are a few advanced TikZ diagrams rendered using this server.
-See [`examples/`](examples/) for source `.tex` code and output images.
+See [`examples/`](examples/) for source `.tex` code and output images. All credit for these goes to the talented authors.
 
 | Diagram             | Author             | Preview |
 |---------------------|--------------------|---------|
