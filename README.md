@@ -157,4 +157,4 @@ Special thanks to the amazing TikZ community and contributors to resources like 
 
 ---
 
-Made with ❤️ by Reuben McQueen at [OpenKit](https://openkit.co.uk)
+Made with ❤️ at [OpenKit](https://openkit.co.uk)
