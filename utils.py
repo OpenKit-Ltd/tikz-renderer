@@ -152,14 +152,42 @@ def crop_pdf_smart(input_pdf_path, output_pdf_path, bottom_padding_pixels=100, r
     )
 
 
-# Keeping the old function for backward compatibility
-def crop_pdf_bottom_smart(input_pdf_path, output_pdf_path, bottom_padding_pixels=100):
-    """Legacy function that only crops the bottom whitespace."""
-    crop_pdf_smart(input_pdf_path, output_pdf_path,
-                   bottom_padding_pixels=bottom_padding_pixels, right_padding_pixels=0)
+def compile_tex_to_pdf_no_crop(tex_code: str, tex_filename: str = "diagram.tex", pdf_filename: str = "diagram.pdf"):
+    """Compile TeX code to PDF without any cropping."""
+    if "\\documentclass" not in tex_code:
+        full_tex_code = """\\documentclass[tikz, preview]{standalone}
+\\usepackage{tikz}
+\\begin{document}
+""" + tex_code + """
+\\end{document}"""
+    else:
+        full_tex_code = tex_code
+
+    with open(tex_filename, "w") as f:
+        f.write(full_tex_code)
+
+    result = subprocess.run(
+        ["tectonic", tex_filename],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        print("Tectonic compilation failed:")
+        print(result.stdout)
+        print(result.stderr)
+        return False, result.stderr
+    else:
+        print("PDF successfully generated!")
+        base_name, _ = os.path.splitext(tex_filename)
+        generated_pdf = base_name + ".pdf"
+        if os.path.exists(generated_pdf) and generated_pdf != pdf_filename:
+            os.rename(generated_pdf, pdf_filename)
+
+        return True, pdf_filename
 
 
 def compile_tex_to_pdf(tex_code: str, tex_filename: str = "diagram.tex", pdf_filename: str = "diagram.pdf"):
+    """Legacy function - compiles TeX and crops (kept for backward compatibility)."""
     if "\\documentclass" not in tex_code:
         full_tex_code = """\\documentclass[tikz, preview]{standalone}
 \\usepackage{tikz}
@@ -200,6 +228,13 @@ def compile_tex_to_pdf(tex_code: str, tex_filename: str = "diagram.tex", pdf_fil
             return True, pdf_filename
 
         return True, pdf_filename
+
+
+# Keeping the old function for backward compatibility
+def crop_pdf_bottom_smart(input_pdf_path, output_pdf_path, bottom_padding_pixels=100):
+    """Legacy function that only crops the bottom whitespace."""
+    crop_pdf_smart(input_pdf_path, output_pdf_path,
+                   bottom_padding_pixels=bottom_padding_pixels, right_padding_pixels=0)
 
 
 def convert_pdf_to_png(pdf_path):
